@@ -127,6 +127,9 @@ int main(void){
     
     int circle_count = 40;
 
+    int target_fps = 600;
+    int frame_counter_wait = 0;
+
     InitWindow(screenWidth, screenHeight, "Test Window");
 
     Vector2 starting_pos = { 300.0f, 300.0f };
@@ -135,7 +138,9 @@ int main(void){
 
     Circle* circle_list = circle_generator(circle_count ,starting_pos, 40);
 
-    SetTargetFPS(600);
+    SetTargetFPS(target_fps);
+    int fps = target_fps;
+
 
     //Main loop
     while (!WindowShouldClose())
@@ -168,6 +173,15 @@ int main(void){
 	    }
 	    
 	    draw_skin(circle_list, circle_count);
+	    
+	    //Draw fps counter
+	    if (frame_counter_wait == ((int)(target_fps / 4))){
+		fps = GetFPS();
+		frame_counter_wait = 0;
+	    }
+	    
+	    DrawText(TextFormat("FPS: %d", fps), 100, 100, 40, RED);
+	    frame_counter_wait++;
 
 	    EndDrawing();
     }
