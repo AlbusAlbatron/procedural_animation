@@ -3,6 +3,7 @@
 #include <raymath.h>
 #include <math.h>
 #include <stdlib.h>
+#include <rlgl.h>
 
 
 typedef struct {
@@ -11,6 +12,15 @@ typedef struct {
     int radius;
     Vector2 perp_bisector[2];
 } Circle;
+
+Vector2* g_SplineBuffer = NULL;
+int g_SplineBufferSize = 0;
+
+void InitSplineBuffer(int initial_max_circles){
+    g_SplineBufferSize = (initial_max_circles * 2);
+    g_SplineBuffer = (Vector2*)MemAlloc(sizeof(Vector2) * g_SplineBufferSize);
+}
+
 
 
 Circle* circle_generator(int circle_count, Vector2 first_pos, int first_radius){
@@ -31,7 +41,7 @@ Circle* circle_generator(int circle_count, Vector2 first_pos, int first_radius){
     for (int i = 1; i < circle_count; i++){
 	circle_line[i].line_pos = i;
 	circle_line[i].center = Vector2Subtract(circle_line[i - 1].center, (Vector2){circle_line[i - 1].radius, 0.0f});
-	circle_line[i].radius = (circle_line[i - 1].radius) * 0.95;
+	circle_line[i].radius = (circle_line[i - 1].radius) * 0.98;
 	circle_line[i].perp_bisector[0] = (Vector2){0, 0};
 	circle_line[i].perp_bisector[1] = (Vector2){0, 0};
 
@@ -39,7 +49,6 @@ Circle* circle_generator(int circle_count, Vector2 first_pos, int first_radius){
 
     return circle_line;
 }
-
 
 int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
     
@@ -92,8 +101,18 @@ int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
 int draw_skin(Circle* circle_line, int circle_count){
     
     for(int i = 1; i < circle_count; i++){
-	DrawLineV(circle_line[i].perp_bisector[0], circle_line[i - 1].perp_bisector[0], GREEN);
-	DrawLineV(circle_line[i].perp_bisector[1], circle_line[i - 1].perp_bisector[1], GREEN);
+//	DrawLineV(circle_line[i].perp_bisector[0], circle_line[i - 1].perp_bisector[0], GREEN);
+//	DrawLineV(circle_line[i].perp_bisector[1], circle_line[i - 1].perp_bisector[1], GREEN);
+	Vector2 quad_points[4] = {circle_line[i].perp_bisector[0],
+		    circle_line[i - 1].perp_bisector[0],
+		    circle_line[i].perp_bisector[1],
+		    circle_line[i - 1].perp_bisector[1]};
+    	Vector2 quad_points_alt[4] = {circle_line[i - 1].perp_bisector[1],
+		    circle_line[i].perp_bisector[1],
+		    circle_line[i -1].perp_bisector[0],
+		    circle_line[i].perp_bisector[0]};
+	DrawTriangleFan(quad_points, 4, MAROON);
+	DrawTriangleFan(quad_points_alt, 4, MAROON);
     }
 
 
@@ -122,9 +141,25 @@ int draw_head(Circle* head_pos){
 					head_pos->center.y + (norm_bisector_direction.y * head_pos->radius)
 	};
 
-
+    DrawCircleV(head_pos->center, head_pos->radius * 1.2, MAROON);
     return 0;
 }
+
+void spline_path_unpacker(Circle* circle_list,int circle_count){
+    int write_index = 0;
+
+    for (int i = 0; i < circle_count; i++){
+	g_SplineBuffer[write_index] = circle_list[i].perp_bisector[0];
+	write_index++;
+    }
+
+    for (int i = circle_count - 1; i >= 0; i--){
+	g_SplineBuffer[write_index] = circle_list[i].perp_bisector[1];
+	write_index++;
+    }
+
+}
+
 
 int main(void){
    //Initialisation
@@ -137,6 +172,7 @@ int main(void){
     int frame_counter_wait = 0;
 
     InitWindow(screenWidth, screenHeight, "Test Window");
+    InitSplineBuffer(circle_count);
 
     Vector2 starting_pos = { 300.0f, 300.0f };
     Vector2 mouse_pos;
@@ -161,8 +197,6 @@ int main(void){
 	    }
 	}
 
-	//Move head circle and prevent it from moving too fast	
-
 	motion(circle_list, circle_count, circle_list[0].center);
 
 	BeginDrawing();
@@ -171,13 +205,14 @@ int main(void){
 	    
 
 	    draw_head(&circle_list[0]);
-	    
+
 	    for(int i = 0; i < circle_count;i++){
 		DrawCircleLines(circle_list[i].center.x, circle_list[i].center.y, circle_list[i].radius, BLACK);
 		DrawCircle(circle_list[i].center.x, circle_list[i].center.y, 1, RED);
 		DrawLineV(circle_list[i].perp_bisector[0], circle_list[i].perp_bisector[1], RED);
 	    }
-	    
+	   
+
 	    draw_skin(circle_list, circle_count);
 	    
 	    //Draw fps counter
@@ -186,6 +221,10 @@ int main(void){
 		frame_counter_wait = 0;
 	    }
 	    
+
+	    spline_path_unpacker(circle_list, circle_count);
+	    DrawSplineCatmullRom(g_SplineBuffer, circle_count * 2, 15, LIGHTGRAY);
+
 	    DrawText(TextFormat("FPS: %d", fps), 100, 100, 40, RED);
 	    frame_counter_wait++;
 
