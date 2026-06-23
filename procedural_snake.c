@@ -62,7 +62,6 @@ int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
 	    circle_line[i].center = Vector2Lerp(circle_line[i].center, prev_pos, 0.03f);
 	    //Tangent position is centre +- radius (depending on rotation) 
 	    //To get rotation of circle find where a diameter length line would be perpendicularly bisected
-	    //
 	    Vector2 norm_bisector_direction = { -norm_direction.y, norm_direction.x};		
 	    circle_line[i].perp_bisector[0] = (Vector2){ temp_pos.x + (norm_bisector_direction.x * circle_line[i].radius),
 				     temp_pos.y + (norm_bisector_direction.y * circle_line[i].radius)
@@ -85,7 +84,15 @@ int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
     return 0;
 }
 
+int draw_skin(Circle* circle_line, int circle_count){
+    
+    for(int i = 2; i < circle_count; i++){
+	DrawLineV(circle_line[i].perp_bisector[0], circle_line[i - 1].perp_bisector[0], GREEN);
+	DrawLineV(circle_line[i].perp_bisector[1], circle_line[i - 1].perp_bisector[1], GREEN);
+    }
 
+
+}
 
 int main(void){
    //Initialisation
@@ -133,6 +140,8 @@ int main(void){
 		DrawCircle(circle_list[i].center.x, circle_list[i].center.y, 1, RED);
 		DrawLineV(circle_list[i].perp_bisector[0], circle_list[i].perp_bisector[1], RED);
 	    }
+	    
+	    draw_skin(circle_list, circle_count);
 
 	    EndDrawing();
     }
