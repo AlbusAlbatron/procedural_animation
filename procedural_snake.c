@@ -58,8 +58,13 @@ int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
 	    temp_pos = circle_line[i].center;
 	    Vector2 direction = {prev_pos.x - temp_pos.x, prev_pos.y - temp_pos.y};
 	    Vector2 norm_direction = Vector2Normalize(direction);
+	    //circle_line[i].center = Vector2Lerp(circle_line[i].center, prev_pos, 0.05f);
+	    Vector2 new_pos_direction = Vector2Normalize(Vector2Subtract(circle_line[i].center, circle_line[i - 1].center));
+	    Vector2 new_pos_offset = (Vector2){ (new_pos_direction.x * circle_line[i - 1].radius),
+			    	      (new_pos_direction.y * circle_line[i - 1].radius)
+		};
+	    circle_line[i].center = Vector2Add(circle_line[i - 1].center, new_pos_offset);
 
-	    circle_line[i].center = Vector2Lerp(circle_line[i].center, prev_pos, 0.08f);
 	    //Tangent position is centre +- radius (depending on rotation) 
 	    //To get rotation of circle find where a diameter length line would be perpendicularly bisected
 	    Vector2 norm_bisector_direction = { -norm_direction.y, norm_direction.x};		
@@ -99,6 +104,7 @@ return 0;
 int draw_head(Circle* head_pos){
     
     Vector2 mouse_pos = GetMousePosition();
+    //Only interpolate if the angle is within a certain range. Use vector normals and unit circle
     head_pos->center = Vector2Lerp(head_pos->center, mouse_pos, 0.03f);
 
     Vector2 direction = {mouse_pos.x - head_pos->center.x, mouse_pos.y - head_pos->center.y};
@@ -127,7 +133,7 @@ int main(void){
     
     int circle_count = 40;
 
-    int target_fps = 600;
+    int target_fps = 120;
     int frame_counter_wait = 0;
 
     InitWindow(screenWidth, screenHeight, "Test Window");
