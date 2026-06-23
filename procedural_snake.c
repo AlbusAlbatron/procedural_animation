@@ -31,7 +31,7 @@ Circle* circle_generator(int circle_count, Vector2 first_pos, int first_radius){
     for (int i = 1; i < circle_count; i++){
 	circle_line[i].line_pos = i;
 	circle_line[i].center = Vector2Subtract(circle_line[i - 1].center, (Vector2){circle_line[i - 1].radius, 0.0f});
-	circle_line[i].radius = (circle_line[i - 1].radius) * 0.8;
+	circle_line[i].radius = (circle_line[i - 1].radius) * 0.95;
 	circle_line[i].perp_bisector[0] = (Vector2){0, 0};
 	circle_line[i].perp_bisector[1] = (Vector2){0, 0};
 
@@ -59,7 +59,7 @@ int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
 	    Vector2 direction = {prev_pos.x - temp_pos.x, prev_pos.y - temp_pos.y};
 	    Vector2 norm_direction = Vector2Normalize(direction);
 
-	    circle_line[i].center = Vector2Lerp(circle_line[i].center, prev_pos, 0.03f);
+	    circle_line[i].center = Vector2Lerp(circle_line[i].center, prev_pos, 0.08f);
 	    //Tangent position is centre +- radius (depending on rotation) 
 	    //To get rotation of circle find where a diameter length line would be perpendicularly bisected
 	    Vector2 norm_bisector_direction = { -norm_direction.y, norm_direction.x};		
@@ -86,18 +86,44 @@ int motion(Circle* circle_line, int circle_count, Vector2 head_pos){
 
 int draw_skin(Circle* circle_line, int circle_count){
     
-    for(int i = 2; i < circle_count; i++){
+    for(int i = 1; i < circle_count; i++){
 	DrawLineV(circle_line[i].perp_bisector[0], circle_line[i - 1].perp_bisector[0], GREEN);
 	DrawLineV(circle_line[i].perp_bisector[1], circle_line[i - 1].perp_bisector[1], GREEN);
     }
 
 
+return 0;
+
+}
+
+int draw_head(Circle* head_pos){
+    
+    Vector2 mouse_pos = GetMousePosition();
+    head_pos->center = Vector2Lerp(head_pos->center, mouse_pos, 0.03f);
+
+    Vector2 direction = {mouse_pos.x - head_pos->center.x, mouse_pos.y - head_pos->center.y};
+    Vector2 norm_direction = Vector2Normalize(direction);
+
+    //Tangent position is centre +- radius (depending on rotation) 
+    //To get rotation of circle find where a diameter length line would be perpendicularly bisected
+    Vector2 norm_bisector_direction = { -norm_direction.y, norm_direction.x};		
+    head_pos->perp_bisector[0] = (Vector2){ head_pos->center.x + (norm_bisector_direction.x * head_pos->radius),
+					head_pos->center.y + (norm_bisector_direction.y * head_pos->radius)
+	};
+
+	norm_bisector_direction = (Vector2){ norm_direction.y, -norm_direction.x };
+	head_pos->perp_bisector[1] = (Vector2){ head_pos->center.x + (norm_bisector_direction.x * head_pos->radius),
+					head_pos->center.y + (norm_bisector_direction.y * head_pos->radius)
+	};
+
+
+    return 0;
 }
 
 int main(void){
    //Initialisation
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    const int screenWidth = 1200;
+    const int screenHeight = 800;
     
     int circle_count = 40;
 
@@ -125,8 +151,6 @@ int main(void){
 	}
 
 	//Move head circle and prevent it from moving too fast	
-	mouse_pos = GetMousePosition();
-	circle_list[0].center = Vector2Lerp(circle_list[0].center, mouse_pos, 0.03f); 
 
 	motion(circle_list, circle_count, circle_list[0].center);
 
@@ -135,6 +159,8 @@ int main(void){
 	    ClearBackground(RAYWHITE);
 	    
 
+	    draw_head(&circle_list[0]);
+	    
 	    for(int i = 0; i < circle_count;i++){
 		DrawCircleLines(circle_list[i].center.x, circle_list[i].center.y, circle_list[i].radius, BLACK);
 		DrawCircle(circle_list[i].center.x, circle_list[i].center.y, 1, RED);
